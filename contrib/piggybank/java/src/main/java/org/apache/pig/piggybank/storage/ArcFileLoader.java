@@ -1,31 +1,24 @@
 package org.apache.pig.piggybank.storage;
 
-import org.apache.commons.logging.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.*;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.*;
-import org.apache.pig.*;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
-import org.apache.pig.data.*;
-import org.apache.pig.impl.logicalLayer.FrontendException;
-import org.apache.pig.impl.util.*;
-import org.apache.pig.LoadPushDown;
-import org.apache.pig.ResourceSchema;
-import org.apache.pig.LoadPushDown.RequiredField;
-import org.apache.pig.LoadPushDown.RequiredFieldResponse;
-import org.apache.pig.ResourceSchema.ResourceFieldSchema;
-import org.commoncrawl.hadoop.mapred.ArcRecord;
-//import org.commoncrawl.hadoop.mapred.ArcRecordReader;
-//import org.commoncrawl.hadoop.mapred.ArcInputFormat;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.nutch.tools.arc.ArcInputFormat;
 import org.apache.nutch.tools.arc.ArcRecordReader;
-import org.apache.hadoop.mapred.FileInputFormat;
-//import org.apache.hadoop.mapred.InputFormat;
+import org.apache.pig.LoadFunc;
+import org.apache.pig.ResourceSchema.ResourceFieldSchema;
+import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
+import org.apache.pig.data.Tuple;
+import org.apache.pig.data.TupleFactory;
+import org.apache.pig.piggybank.storage.arc.PigArcInputFormat;
+import org.commoncrawl.hadoop.mapred.ArcRecord;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
 
 public class ArcFileLoader extends LoadFunc {
     private static final Log log = LogFactory.getLog( ArcFileLoader.class );
@@ -45,22 +38,27 @@ public class ArcFileLoader extends LoadFunc {
     }
 
     @Override
+    public InputFormat<Text, BytesWritable> getInputFormat() throws IOException {
+        return new PigArcInputFormat();
+    }
+
+    @Override
     public Tuple getNext() throws IOException {
         Tuple t = tupleFactory.newTuple(1);
         try {
             Text key = null;
             ArcRecord value = null;
             boolean sucess = _recordReader.next(key, value);
-            
+
             // True if we read the next record
             if(sucess) {
                 log.info("Url: " + key.toString());
                 log.info("Content: " + value.getContent());
-            
+
                 // Start by just returning the url
                 t.set(1, key.toString());
             }
-            
+
             return t;
         }
         catch (Exception ie) {
@@ -72,10 +70,10 @@ public class ArcFileLoader extends LoadFunc {
     public void prepareToRead(RecordReader reader, PigSplit split) {
         this._recordReader = (ArcRecordReader) reader;
         log.info("Preparing to read with " + _recordReader);
-        
+
         if(_recordReader == null)
             throw new IOException("Invalid Record Reader");
-        
+
         // UDFContext udfc = UDFContext.getUDFContext();
         // Configuration c = udfc.getJobConf();
         // Properties p = udfc.getUDFProperties(this.getClass(), new String[]{_udfContextSignature});
