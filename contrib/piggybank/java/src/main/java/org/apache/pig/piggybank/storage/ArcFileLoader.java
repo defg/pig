@@ -7,14 +7,13 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.nutch.tools.arc.ArcInputFormat;
-import org.apache.nutch.tools.arc.ArcRecordReader;
 import org.apache.pig.LoadFunc;
 import org.apache.pig.ResourceSchema.ResourceFieldSchema;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
 import org.apache.pig.piggybank.storage.arc.PigArcInputFormat;
+import org.apache.pig.piggybank.storage.arc.PigArcRecordReader;
 import org.commoncrawl.hadoop.mapred.ArcRecord;
 
 import java.io.IOException;
@@ -22,7 +21,7 @@ import java.util.ArrayList;
 
 public class ArcFileLoader extends LoadFunc {
     private static final Log log = LogFactory.getLog( ArcFileLoader.class );
-    protected ArcRecordReader _recordReader = null;
+    protected PigArcRecordReader _recordReader = null;
     private ArrayList<Object> mProtoTuple = null;
     private TupleFactory tupleFactory = TupleFactory.getInstance();
     ResourceFieldSchema[] fields;
@@ -48,10 +47,10 @@ public class ArcFileLoader extends LoadFunc {
         try {
             Text key = null;
             ArcRecord value = null;
-            boolean sucess = _recordReader.next(key, value);
+            boolean success = _recordReader.nextKeyValue();
 
             // True if we read the next record
-            if(sucess) {
+            if(success) {
                 log.info("Url: " + key.toString());
                 log.info("Content: " + value.getContent());
 
@@ -67,8 +66,8 @@ public class ArcFileLoader extends LoadFunc {
     }
 
     @Override
-    public void prepareToRead(RecordReader reader, PigSplit split) {
-        this._recordReader = (ArcRecordReader) reader;
+    public void prepareToRead(RecordReader reader, PigSplit split) throws IOException {
+        this._recordReader = (PigArcRecordReader) reader;
         log.info("Preparing to read with " + _recordReader);
 
         if(_recordReader == null)
@@ -84,6 +83,6 @@ public class ArcFileLoader extends LoadFunc {
     @Override
     public void setLocation(String location, Job job)
             throws IOException {
-        ArcInputFormat.setInputPaths(job, location);
+        PigArcInputFormat.setInputPaths(job, location);
     }
 }

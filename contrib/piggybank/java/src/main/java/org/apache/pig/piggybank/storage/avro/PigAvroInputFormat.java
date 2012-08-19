@@ -17,19 +17,16 @@
 
 package org.apache.pig.piggybank.storage.avro;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.avro.Schema;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+
+import java.io.IOException;
 
 /**
  * The InputFormat for avro data.
