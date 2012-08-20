@@ -45,17 +45,23 @@ public class ArcFileLoader extends LoadFunc {
     public Tuple getNext() throws IOException {
         Tuple t = tupleFactory.newTuple(1);
         try {
-            Text key = null;
-            ArcRecord value = null;
             boolean success = _recordReader.nextKeyValue();
 
             // True if we read the next record
             if(success) {
-                log.info("Url: " + key.toString());
-                log.info("Content: " + value.getContent());
+                key = _recordReader.getCurrentKey();
+                value = _recordReader.getCurrentValue();
+
+                log.warn("Url: " + key.toString());
+                log.warn("Content: " + value.getContent());
+
+                t = (Tuple) _recordReader.getCurrentValue();
 
                 // Start by just returning the url
-                t.set(1, key.toString());
+                //t.set(1, key.toString());
+            }
+            else {
+                log.warn("No success on nextKeyValue()");
             }
 
             return t;
