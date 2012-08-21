@@ -24,6 +24,10 @@ INCOMPATIBLE CHANGES
 
 IMPROVEMENTS
 
+PIG-2556: CSVExcelStorage load: quoted field with newline as first character sees newline as record end (tivv via dvryaboy)
+
+PIG-2875: Add recursive record support to AvroStorage (cheolsoo via sms)
+
 PIG-2662: skew join does not honor its config parameters (rajesh.balamohan via thejas)
 
 PIG-2871: Refactor signature for PigReducerEstimator (billgraham)
@@ -235,6 +239,8 @@ PIG-2337: Provide UDF with input schema (xutingz via daijy)
 OPTIMIZATIONS
 
 BUG FIXES
+
+PIG-2884: JobControlCompiler mis-logs after reducer estimation (billgraham)
 
 PIG-2876: Bump up Xerces version (jcoveney)
 
