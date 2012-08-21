@@ -2,7 +2,6 @@ package org.apache.pig.piggybank.storage;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
@@ -13,8 +12,8 @@ import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
 import org.apache.pig.piggybank.storage.arc.PigArcInputFormat;
+import org.apache.pig.piggybank.storage.arc.PigArcRecord;
 import org.apache.pig.piggybank.storage.arc.PigArcRecordReader;
-import org.commoncrawl.hadoop.mapred.ArcRecord;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,6 +24,8 @@ public class ArcFileLoader extends LoadFunc {
     private ArrayList<Object> mProtoTuple = null;
     private TupleFactory tupleFactory = TupleFactory.getInstance();
     ResourceFieldSchema[] fields;
+    Text key;
+    PigArcRecord value;
     //String strSchema = "{}"
     
     /**
@@ -37,13 +38,14 @@ public class ArcFileLoader extends LoadFunc {
     }
 
     @Override
-    public InputFormat<Text, BytesWritable> getInputFormat() throws IOException {
+    public InputFormat<Text, PigArcRecord> getInputFormat() throws IOException {
         return new PigArcInputFormat();
     }
 
     @Override
     public Tuple getNext() throws IOException {
-        Tuple t = tupleFactory.newTuple(1);
+        log.warn("getNext()");
+        Tuple t = tupleFactory.newTuple(2);
         try {
             boolean success = _recordReader.nextKeyValue();
 
@@ -58,7 +60,8 @@ public class ArcFileLoader extends LoadFunc {
                 t = (Tuple) _recordReader.getCurrentValue();
 
                 // Start by just returning the url
-                //t.set(1, key.toString());
+                t.set(1, key.toString());
+                t.set(2, value.getIpAddress());
             }
             else {
                 log.warn("No success on nextKeyValue()");

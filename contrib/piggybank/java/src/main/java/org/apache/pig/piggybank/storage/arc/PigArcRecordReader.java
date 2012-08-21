@@ -27,7 +27,6 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.apache.hadoop.util.StringUtils;
 import org.apache.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
@@ -56,8 +55,8 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
 
     private static final Logger LOG = Logger.getLogger(PigArcRecordReader.class);
 
-    private Text key;
-    private BytesWritable value;
+    private Text key = null;
+    private PigArcRecord value = null;
 
     protected Configuration conf;
     protected long splitStart = 0;
@@ -107,11 +106,17 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
             throws IOException {
 
         Path path = split.getPath();
+        LOG.warn("Path: " + path.toString());
         FileSystem fs = path.getFileSystem(conf);
+        LOG.warn("FileSystem: " + fs.toString());
         fileLen = fs.getFileStatus(split.getPath()).getLen();
+        LOG.warn("fileLen: " + Long.toString(fileLen));
         this.conf = conf;
+        LOG.warn("conf: " + conf.toString());
         this.in = fs.open(split.getPath());
+        LOG.warn("this.in: " + this.in.toString());
         this.splitStart = split.getStart();
+        LOG.warn("this.splitStart: " + split.toString());
         this.splitEnd = splitStart + split.getLength();
         this.splitLen = split.getLength();
         in.seek(splitStart);
@@ -129,14 +134,14 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
      * Creates a new instance of the <code>Text</code> object for the key.
      */
     public Text getCurrentKey() {
-        return (Text)ReflectionUtils.newInstance(Text.class, conf);
+        return this.key;
     }
 
     /**
      * Creates a new instance of the <code>BytesWritable</code> object for the key
      */
     public PigArcRecord getCurrentValue() {
-        return (PigArcRecord)ReflectionUtils.newInstance(PigArcRecord.class, conf);
+        return this.value;
     }
 
     /**
@@ -171,17 +176,21 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
     public boolean nextKeyValue()
             throws java.io.IOException, java.lang.InterruptedException {
 
-        try {
+        //try {
 
             // get the starting position on the input stream
             long startRead = in.getPos();
+            LOG.warn("startRead: " + Long.toString(startRead));
             byte[] magicBuffer = null;
 
             // we need this loop to handle false positives in reading of gzip records
             while (true) {
-
+                
+                LOG.warn("While = true");
+                LOG.warn(Long.toString(startRead) + " - " + Long.toString(splitEnd));
                 // while we haven't passed the end of the split
                 if (startRead >= splitEnd) {
+                    LOG.warn("startRead >= splitEnd");
                     return false;
                 }
 
@@ -257,9 +266,11 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
                 String header = new String(content, 0, eol).trim();
                 byte[] raw = new byte[(content.length - eol) - 1];
                 System.arraycopy(content, eol + 1, raw, 0, raw.length);
+                LOG.warn("header: " + header.toString());
 
                 // populate key and values with the header and raw content.
                 Text keyText = (Text)key;
+                LOG.warn("keyText: " + keyText.toString());
                 keyText.set(header);
                 BytesWritable valueBytes = (BytesWritable)value;
                 valueBytes.set(raw, 0, raw.length);
@@ -275,13 +286,14 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
                 // populated the record, now return
                 return true;
             }
-        }
-        catch (Exception e) {
-            LOG.equals(StringUtils.stringifyException(e));
-        }
+//        }
+//        catch (Exception e) {
+//            LOG.warn("Exception in nextKeyValue");
+//            LOG.equals(StringUtils.stringifyException(e));
+//        }
 
         // couldn't populate the record or there is no next record to read
-        return false;
+        //return false;
     }
 
     @Override

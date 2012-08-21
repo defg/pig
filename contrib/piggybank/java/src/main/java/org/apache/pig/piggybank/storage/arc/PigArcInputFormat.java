@@ -1,7 +1,6 @@
 package org.apache.pig.piggybank.storage.arc;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -11,12 +10,12 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
 
-public class PigArcInputFormat extends FileInputFormat<Text, BytesWritable> {
+public class PigArcInputFormat extends FileInputFormat<Text, PigArcRecord> {
 
     public PigArcInputFormat() {
     }
 
-    public RecordReader<Text, BytesWritable> createRecordReader(InputSplit split, TaskAttemptContext taskContext)
+    public RecordReader<Text, PigArcRecord> createRecordReader(InputSplit split, TaskAttemptContext taskContext)
             throws IOException {
 
         Configuration config = taskContext.getConfiguration();
