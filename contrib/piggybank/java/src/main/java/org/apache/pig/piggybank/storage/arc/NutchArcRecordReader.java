@@ -39,10 +39,10 @@ import java.util.zip.GZIPInputStream;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
 
-public class NutchRecordReader
+public class NutchArcRecordReader
         extends RecordReader<Text, BytesWritable> {
 
-    private static final Logger LOG = Logger.getLogger(NutchRecordReader.class);
+    private static final Logger LOG = Logger.getLogger(NutchArcRecordReader.class);
 
     Text key = null;
     BytesWritable value = null;
@@ -90,7 +90,7 @@ public class NutchRecordReader
      *
      * @throws IOException  If an IO error occurs while initializing file split.
      */
-    public NutchRecordReader(Configuration conf, FileSplit split)
+    public NutchArcRecordReader(Configuration conf, FileSplit split)
             throws IOException {
 
         Path path = split.getPath();
@@ -171,35 +171,43 @@ public class NutchRecordReader
 
             // get the starting position on the input stream
             long startRead = in.getPos();
+            LOG.warn(Long.toString(startRead));
             byte[] magicBuffer = null;
 
             // we need this loop to handle false positives in reading of gzip records
             while (true) {
-
+                LOG.warn("while (true)");
                 // while we haven't passed the end of the split
+                LOG.warn(Long.toString(startRead) + " " + Long.toString(splitEnd));
                 if (startRead >= splitEnd) {
+                    LOG.warn("startRead >= splitEnd");
                     return false;
                 }
 
                 // scanning for the gzip header
                 boolean foundStart = false;
                 while (!foundStart) {
-
+                    LOG.warn("foundStart");
                     // start at the current file position and scan for 1K at time, break
                     // if there is no more to read
                     startRead = in.getPos();
+                    LOG.warn("new startRead " + Long.toString(startRead));
                     magicBuffer = new byte[1024];
+                    LOG.warn("magicBuffer: " + magicBuffer.toString());
                     int read = in.read(magicBuffer);
+                    LOG.warn("Read " + Integer.toString(read) + " bytes");
                     if (read < 0) {
                         break;
                     }
 
                     // scan the byte array for the gzip header magic number.  This happens
                     // byte by byte
+                    LOG.warn("Looking for gzip header magic number");
                     for (int i = 0; i < read - 1; i++) {
                         byte[] testMagic = new byte[2];
                         System.arraycopy(magicBuffer, i, testMagic, 0, 2);
                         if (isMagic(testMagic)) {
+                            LOG.warn("Found start");
                             // set the next start to the current gzip header
                             startRead += i;
                             foundStart = true;
@@ -221,17 +229,20 @@ public class NutchRecordReader
                     int gzipRead = -1;
                     baos = new ByteArrayOutputStream();
                     while ((gzipRead = zin.read(buffer, 0, buffer.length)) != -1) {
+                        LOG.warn("buffer: " + buffer.toString().substring(0, 20));
                         baos.write(buffer, 0, gzipRead);
                         totalRead += gzipRead;
+                        LOG.warn("totalRead: " + totalRead);
                     }
                 }
                 catch (Exception e) {
-
+                    LOG.warn("Caught exception, not a real gzip record!");
                     // there are times we get false positives where the gzip header exists
                     // but it is not an actual gzip record, so we ignore it and start
                     // over seeking
                     // LOG.debug("Ignoring position: " + (startRead));
                     if (startRead + 1 < fileLen) {
+                        LOG.warn("startRead + 1 < fileLen");
                         in.seek(startRead + 1);
                     }
                     continue;
@@ -239,23 +250,28 @@ public class NutchRecordReader
 
                 // change the output stream to a byte array
                 byte[] content = baos.toByteArray();
+                LOG.warn(content.toString().substring(0, 10));
 
                 // the first line of the raw content in arc files is the header
                 int eol = 0;
                 for (int i = 0; i < content.length; i++) {
                     if (i > 0 && content[i] == '\n') {
                         eol = i;
+                        LOG.warn("End of header found");
                         break;
                     }
                 }
 
                 // create the header and the raw content minus the header
                 String header = new String(content, 0, eol).trim();
+                LOG.warn("Header: " + header);
                 byte[] raw = new byte[(content.length - eol) - 1];
                 System.arraycopy(content, eol + 1, raw, 0, raw.length);
+                LOG.warn("raw.length: " + raw.length);
 
                 // populate key and values with the header and raw content.
                 Text keyText = (Text)this.key;
+                LOG.warn("keyText: " + keyText.toString());
                 keyText.set(header);
                 BytesWritable valueBytes = (BytesWritable)value;
                 valueBytes.set(raw, 0, raw.length);
@@ -273,6 +289,7 @@ public class NutchRecordReader
             }
         }
         catch (Exception e) {
+            LOG.warn("Exception parsing content");
             LOG.equals(StringUtils.stringifyException(e));
         }
 

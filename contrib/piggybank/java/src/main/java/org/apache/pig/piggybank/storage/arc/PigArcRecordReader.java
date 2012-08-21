@@ -17,21 +17,17 @@
 package org.apache.pig.piggybank.storage.arc;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.hadoop.util.StringUtils;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.zip.GZIPInputStream;
+import java.text.ParseException;
 
 // - modified by Common Crawl -
 //import org.slf4j.Logger;
@@ -55,93 +51,42 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
 
     private static final Logger LOG = Logger.getLogger(PigArcRecordReader.class);
 
+    private NutchArcRecordReader _impl;
+
     private Text key = null;
     private PigArcRecord value = null;
 
-    protected Configuration conf;
-    protected long splitStart = 0;
-    protected long pos = 0;
-    protected long splitEnd = 0;
-    protected long splitLen = 0;
-    protected long fileLen = 0;
-    protected FSDataInputStream in;
-
-    private static byte[] MAGIC = {(byte)0x1F, (byte)0x8B};
 
     /**
-     * <p>Returns true if the byte array passed matches the gzip header magic
-     * number.</p>
-     *
-     * @param input The byte array to check.
-     *
-     * @return True if the byte array matches the gzip header magic number.
-     */
-    public static boolean isMagic(byte[] input) {
-
-        // check for null and incorrect length
-        if (input == null || input.length != MAGIC.length) {
-            return false;
-        }
-
-        // check byte by byte
-        for (int i = 0; i < MAGIC.length; i++) {
-            if (MAGIC[i] != input[i]) {
-                return false;
-            }
-        }
-
-        // must match
-        return true;
-    }
-
-    /**
-     * Constructor that sets the configuration and file split.
-     *
-     * @param conf The job configuration.
-     * @param split The file split to read from.
-     *
-     * @throws IOException  If an IO error occurs while initializing file split.
+     /**
+     * {@inheritDoc}
      */
     public PigArcRecordReader(Configuration conf, FileSplit split)
             throws IOException {
-
-        Path path = split.getPath();
-        LOG.warn("Path: " + path.toString());
-        FileSystem fs = path.getFileSystem(conf);
-        LOG.warn("FileSystem: " + fs.toString());
-        fileLen = fs.getFileStatus(split.getPath()).getLen();
-        LOG.warn("fileLen: " + Long.toString(fileLen));
-        this.conf = conf;
-        LOG.warn("conf: " + conf.toString());
-        this.in = fs.open(split.getPath());
-        LOG.warn("this.in: " + this.in.toString());
-        this.splitStart = split.getStart();
-        LOG.warn("this.splitStart: " + split.toString());
-        this.splitEnd = splitStart + split.getLength();
-        this.splitLen = split.getLength();
-        in.seek(splitStart);
+        this._impl = new NutchArcRecordReader(conf, split);
+        LOG.setLevel(Level.DEBUG);
     }
 
     /**
-     * Closes the record reader resources.
+     * {@inheritDoc}
      */
     public void close()
             throws IOException {
-        this.in.close();
+        this._impl.close();
     }
 
     /**
      * Creates a new instance of the <code>Text</code> object for the key.
      */
     public Text getCurrentKey() {
-        return this.key;
+        return new Text();
     }
 
     /**
      * Creates a new instance of the <code>BytesWritable</code> object for the key
      */
     public PigArcRecord getCurrentValue() {
-        return this.value;
+        return new PigArcRecord();
     }
 
     /**
@@ -151,7 +96,7 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
      */
     public long getPos()
             throws IOException {
-        return in.getPos();
+        return this._impl.getPos();
     }
 
     /**
@@ -162,18 +107,22 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
      */
     public float getProgress()
             throws IOException {
-
-        // if we haven't even started
-        if (splitEnd == splitStart) {
-            return 0.0f;
-        }
-        else {
-            // the progress is current pos - where we started  / length of the split
-            return Math.min(1.0f, (getPos() - splitStart) / (float)splitLen);
-        }
+        return this._impl.getProgress();
     }
 
-    public boolean getNextValue()
+    private final int _maxRecursion = 100;
+    private       int _recursion    = 0;
+
+    private boolean _callNext(Text key, PigArcRecord value)
+            throws IOException {
+        boolean rv;
+        this._recursion++;
+        rv = this.nextKeyValue();
+        this._recursion--;
+        return rv;
+    }
+
+    public boolean nextKeyValue()
             throws IOException {
 
         BytesWritable bytes = new BytesWritable();
@@ -181,7 +130,11 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
         boolean rv;
 
         // get the next record from the underlying Nutch implementation
-        rv = this._impl.next(key, bytes);
+        rv = this._impl.nextKeyValue();
+        LOG.warn("impl.nextKeyValue: " + Boolean.toString(rv));
+        key = this._impl.getCurrentKey();
+        LOG.warn("Key: " + key.toString());
+        bytes = this._impl.getCurrentValue();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("Entering RecordReader.next() - recursion = " + this._recursion);
@@ -255,4 +208,5 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
     public void initialize(InputSplit arg0, TaskAttemptContext arg1) throws IOException, InterruptedException {
         // Nothing to do
     }
+
 }
