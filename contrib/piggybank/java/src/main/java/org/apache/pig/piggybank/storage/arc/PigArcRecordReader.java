@@ -26,7 +26,7 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.hadoop.util.StringUtils;
 import org.apache.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
@@ -173,127 +173,82 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
         }
     }
 
-    public boolean nextKeyValue()
-            throws java.io.IOException, java.lang.InterruptedException {
+    public boolean getNextValue()
+            throws IOException {
 
-        //try {
+        BytesWritable bytes = new BytesWritable();
 
-            // get the starting position on the input stream
-            long startRead = in.getPos();
-            LOG.warn("startRead: " + Long.toString(startRead));
-            byte[] magicBuffer = null;
+        boolean rv;
 
-            // we need this loop to handle false positives in reading of gzip records
-            while (true) {
-                
-                LOG.warn("While = true");
-                LOG.warn(Long.toString(startRead) + " - " + Long.toString(splitEnd));
-                // while we haven't passed the end of the split
-                if (startRead >= splitEnd) {
-                    LOG.warn("startRead >= splitEnd");
-                    return false;
-                }
+        // get the next record from the underlying Nutch implementation
+        rv = this._impl.next(key, bytes);
 
-                // scanning for the gzip header
-                boolean foundStart = false;
-                while (!foundStart) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Entering RecordReader.next() - recursion = " + this._recursion);
+            LOG.debug("- ARC Record Header (Nutch): [" + key.toString() + "]");
+            LOG.debug("- ARC Record Content Size (Nutch):  " + String.format("%,12d", bytes.getLength()));
+            LOG.debug("- Free / Curr JVM / Max JVM Memory: " + String.format("%,12d", Runtime.getRuntime().freeMemory()  / 1024 / 1024) + "MB "
+                    + String.format("%,12d", Runtime.getRuntime().totalMemory() / 1024 / 1024) + "MB "
+                    + String.format("%,12d", Runtime.getRuntime().maxMemory()   / 1024 / 1024) + "MB");
+        }
 
-                    // start at the current file position and scan for 1K at time, break
-                    // if there is no more to read
-                    startRead = in.getPos();
-                    magicBuffer = new byte[1024];
-                    int read = in.read(magicBuffer);
-                    if (read < 0) {
-                        break;
-                    }
+        // if 'false' is returned, EOF has been reached
+        if (rv == false) {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Nutch ARC reader returned FALSE at " + this.getPos());
+            return false;
+        }
 
-                    // scan the byte array for the gzip header magic number.  This happens
-                    // byte by byte
-                    for (int i = 0; i < read - 1; i++) {
-                        byte[] testMagic = new byte[2];
-                        System.arraycopy(magicBuffer, i, testMagic, 0, 2);
-                        if (isMagic(testMagic)) {
-                            // set the next start to the current gzip header
-                            startRead += i;
-                            foundStart = true;
-                            break;
-                        }
-                    }
-                }
+        // if we've found too many invalid records in a row, bail ...
+        if (this._recursion > this._maxRecursion) {
+            LOG.error("Found too many ("+this._maxRecursion+") invalid records in a row.  Aborting ...");
+            return false;
+        }
 
-                // seek to the start of the gzip header
-                in.seek(startRead);
-                ByteArrayOutputStream baos = null;
-                int totalRead = 0;
+        // get the ARC record header returned from Nutch
+        String arcRecordHeader = key.toString();
 
-                try {
+        // perform a basic sanity check on the record header
+        if (arcRecordHeader.length() < 12) {
+            LOG.error("Record at offset " + this.getPos() + " does not have appropriate ARC header: [" + arcRecordHeader + "]");
+            return this._callNext(key, value);
+        }
 
-                    // read 4K of the gzip at a time putting into a byte array
-                    byte[] buffer = new byte[4096];
-                    GZIPInputStream zin = new GZIPInputStream(in);
-                    int gzipRead = -1;
-                    baos = new ByteArrayOutputStream();
-                    while ((gzipRead = zin.read(buffer, 0, buffer.length)) != -1) {
-                        baos.write(buffer, 0, gzipRead);
-                        totalRead += gzipRead;
-                    }
-                }
-                catch (Exception e) {
+        // skip the ARC file header record
+        if (arcRecordHeader.startsWith("filedesc://")) {
+            LOG.info("File header detected: skipping record at " + this.getPos() + " [ " + arcRecordHeader + "]");
+            return this._callNext(key, value);
+        }
 
-                    // there are times we get false positives where the gzip header exists
-                    // but it is not an actual gzip record, so we ignore it and start
-                    // over seeking
-                    // LOG.debug("Ignoring position: " + (startRead));
-                    if (startRead + 1 < fileLen) {
-                        in.seek(startRead + 1);
-                    }
-                    continue;
-                }
+        try {
 
-                // change the output stream to a byte array
-                byte[] content = baos.toByteArray();
+            // split ARC metadata into fields
+            value.setArcRecordHeader(arcRecordHeader);
 
-                // the first line of the raw content in arc files is the header
-                int eol = 0;
-                for (int i = 0; i < content.length; i++) {
-                    if (i > 0 && content[i] == '\n') {
-                        eol = i;
-                        break;
-                    }
-                }
+            if (LOG.isDebugEnabled())
+                LOG.debug("- ARC Record Size (ARC Header):     " + String.format("%,12d", value.getContentLength()));
 
-                // create the header and the raw content minus the header
-                String header = new String(content, 0, eol).trim();
-                byte[] raw = new byte[(content.length - eol) - 1];
-                System.arraycopy(content, eol + 1, raw, 0, raw.length);
-                LOG.warn("header: " + header.toString());
+            // set the key to the URL
+            key.set(value.getURL());
 
-                // populate key and values with the header and raw content.
-                Text keyText = (Text)key;
-                LOG.warn("keyText: " + keyText.toString());
-                keyText.set(header);
-                BytesWritable valueBytes = (BytesWritable)value;
-                valueBytes.set(raw, 0, raw.length);
-
-                // TODO: It would be best to start at the end of the gzip read but
-                // the bytes read in gzip don't match raw bytes in the file so we
-                // overshoot the next header.  With this current method you get
-                // some false positives but don't miss records.
-                if (startRead + 1 < fileLen) {
-                    in.seek(startRead + 1);
-                }
-
-                // populated the record, now return
-                return true;
+            // see if we need to parse HTTP headers
+            if (arcRecordHeader.startsWith("http://")) {
+                value.setParseHttpMessage(true);
             }
-//        }
-//        catch (Exception e) {
-//            LOG.warn("Exception in nextKeyValue");
-//            LOG.equals(StringUtils.stringifyException(e));
-//        }
 
-        // couldn't populate the record or there is no next record to read
-        //return false;
+            // set the content, and parse the headers (if necessary)
+            value.setContent(bytes);
+        }
+        catch (IllegalArgumentException ex) {
+            LOG.error("Unable to process record at offset " + this.getPos() + ": ", ex);
+            return this._callNext(key, value);
+        }
+        catch (ParseException ex) {
+            LOG.error("Unable to process record at offset " + this.getPos() + ": ", ex);
+            return this._callNext(key, value);
+        }
+
+        return true;
     }
 
     @Override
