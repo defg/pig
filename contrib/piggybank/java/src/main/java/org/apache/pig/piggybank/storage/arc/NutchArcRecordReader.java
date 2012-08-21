@@ -27,8 +27,6 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.hadoop.util.ReflectionUtils;
-import org.apache.hadoop.util.StringUtils;
 import org.apache.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
@@ -44,8 +42,8 @@ public class NutchArcRecordReader
 
     private static final Logger LOG = Logger.getLogger(NutchArcRecordReader.class);
 
-    Text key = null;
-    BytesWritable value = null;
+    Text key;
+    BytesWritable value;
     protected Configuration conf;
     protected long splitStart = 0;
     protected long pos = 0;
@@ -116,14 +114,14 @@ public class NutchArcRecordReader
      * Creates a new instance of the <code>Text</code> object for the key.
      */
     public Text getCurrentKey() {
-        return (Text)ReflectionUtils.newInstance(Text.class, conf);
+        return key;
     }
 
     /**
      * Creates a new instance of the <code>BytesWritable</code> object for the key
      */
     public BytesWritable getCurrentValue() {
-        return (BytesWritable)ReflectionUtils.newInstance(BytesWritable.class, conf);
+        return value;
     }
 
     /**
@@ -229,7 +227,7 @@ public class NutchArcRecordReader
                     int gzipRead = -1;
                     baos = new ByteArrayOutputStream();
                     while ((gzipRead = zin.read(buffer, 0, buffer.length)) != -1) {
-                        LOG.warn("buffer: " + buffer.toString().substring(0, 20));
+                        //LOG.warn("buffer: " + buffer.toString().substring(0, 20));
                         baos.write(buffer, 0, gzipRead);
                         totalRead += gzipRead;
                         LOG.warn("totalRead: " + totalRead);
@@ -237,6 +235,7 @@ public class NutchArcRecordReader
                 }
                 catch (Exception e) {
                     LOG.warn("Caught exception, not a real gzip record!");
+                    e.printStackTrace();
                     // there are times we get false positives where the gzip header exists
                     // but it is not an actual gzip record, so we ignore it and start
                     // over seeking
@@ -250,7 +249,7 @@ public class NutchArcRecordReader
 
                 // change the output stream to a byte array
                 byte[] content = baos.toByteArray();
-                LOG.warn(content.toString().substring(0, 10));
+                LOG.warn("First 10 of Content: " + content.toString().substring(0, 10));
 
                 // the first line of the raw content in arc files is the header
                 int eol = 0;
@@ -271,7 +270,10 @@ public class NutchArcRecordReader
 
                 // populate key and values with the header and raw content.
                 Text keyText = (Text)this.key;
-                LOG.warn("keyText: " + keyText.toString());
+
+                /* If we get a null key, make a new one. What the hell are we supposed to do? */
+                if(keyText != null) { LOG.warn("keyText: " + keyText.toString()); }
+                else { this.key = new Text(); keyText = this.key; }
                 keyText.set(header);
                 BytesWritable valueBytes = (BytesWritable)value;
                 valueBytes.set(raw, 0, raw.length);
@@ -290,7 +292,7 @@ public class NutchArcRecordReader
         }
         catch (Exception e) {
             LOG.warn("Exception parsing content");
-            LOG.equals(StringUtils.stringifyException(e));
+            e.printStackTrace();
         }
 
         // couldn't populate the record or there is no next record to read

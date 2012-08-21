@@ -45,7 +45,7 @@ public class ArcFileLoader extends LoadFunc {
     @Override
     public Tuple getNext() throws IOException {
         log.warn("getNext()");
-        Tuple t = tupleFactory.newTuple(2);
+        Tuple t = tupleFactory.newTuple(4);
         try {
             boolean success = _recordReader.nextKeyValue();
 
@@ -58,10 +58,15 @@ public class ArcFileLoader extends LoadFunc {
                 log.warn("Content: " + value.getContent());
 
                 t = (Tuple) _recordReader.getCurrentValue();
+                
+                log.warn("content: " + t.toDelimitedString(", "));
 
                 // Start by just returning the url
                 t.set(1, key.toString());
                 t.set(2, value.getIpAddress());
+                t.set(3, value.getContent());
+                t.set(4, value.getContentType());
+                
             }
             else {
                 log.warn("No success on nextKeyValue()");

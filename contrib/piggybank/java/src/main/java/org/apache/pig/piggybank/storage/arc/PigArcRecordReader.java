@@ -53,8 +53,8 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
 
     private NutchArcRecordReader _impl;
 
-    private Text key = null;
-    private PigArcRecord value = null;
+    private Text key;
+    private PigArcRecord value;
 
 
     /**
@@ -133,17 +133,16 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
         rv = this._impl.nextKeyValue();
         LOG.warn("impl.nextKeyValue: " + Boolean.toString(rv));
         key = this._impl.getCurrentKey();
-        LOG.warn("Key: " + key.toString());
         bytes = this._impl.getCurrentValue();
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Entering RecordReader.next() - recursion = " + this._recursion);
-            LOG.debug("- ARC Record Header (Nutch): [" + key.toString() + "]");
-            LOG.debug("- ARC Record Content Size (Nutch):  " + String.format("%,12d", bytes.getLength()));
-            LOG.debug("- Free / Curr JVM / Max JVM Memory: " + String.format("%,12d", Runtime.getRuntime().freeMemory()  / 1024 / 1024) + "MB "
-                    + String.format("%,12d", Runtime.getRuntime().totalMemory() / 1024 / 1024) + "MB "
-                    + String.format("%,12d", Runtime.getRuntime().maxMemory()   / 1024 / 1024) + "MB");
-        }
+//        if (LOG.isDebugEnabled()) {
+//            LOG.debug("Entering RecordReader.next() - recursion = " + this._recursion);
+//            LOG.debug("- ARC Record Header (Nutch): [" + key.toString() + "]");
+//            LOG.debug("- ARC Record Content Size (Nutch):  " + String.format("%,12d", bytes.getLength()));
+//            LOG.debug("- Free / Curr JVM / Max JVM Memory: " + String.format("%,12d", Runtime.getRuntime().freeMemory()  / 1024 / 1024) + "MB "
+//                    + String.format("%,12d", Runtime.getRuntime().totalMemory() / 1024 / 1024) + "MB "
+//                    + String.format("%,12d", Runtime.getRuntime().maxMemory()   / 1024 / 1024) + "MB");
+//        }
 
         // if 'false' is returned, EOF has been reached
         if (rv == false) {
