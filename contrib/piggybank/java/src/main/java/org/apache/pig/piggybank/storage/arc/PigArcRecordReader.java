@@ -52,7 +52,7 @@ import java.util.zip.GZIPInputStream;
  * see {@link ://www.archive.org/ }
  * see {@link ://www.grub.org/ }
  */
-public class PigArcRecordReader extends RecordReader<Text, BytesWritable> {
+public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
 
     private static final Logger LOG = Logger.getLogger(PigArcRecordReader.class);
 
@@ -135,8 +135,8 @@ public class PigArcRecordReader extends RecordReader<Text, BytesWritable> {
     /**
      * Creates a new instance of the <code>BytesWritable</code> object for the key
      */
-    public BytesWritable getCurrentValue() {
-        return (BytesWritable)ReflectionUtils.newInstance(BytesWritable.class, conf);
+    public PigArcRecord getCurrentValue() {
+        return (PigArcRecord)ReflectionUtils.newInstance(PigArcRecord.class, conf);
     }
 
     /**

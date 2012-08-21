@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="build">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/build/pig-0.11.0-SNAPSHOT.jar!/" />
+      <root url="jar://$PROJECT_DIR$/build/pig-0.11.0-SNAPSHOT-withdependencies.jar!/" />
+      <root url="jar://$PROJECT_DIR$/build/pig-0.11.0-SNAPSHOT-withouthadoop.jar!/" />
+      <root url="file://$USER_HOME$/commoncrawl-examples" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$USER_HOME$/commoncrawl-examples/src/java" />
+    </SOURCES>
+  </library>
+</component>

@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="data">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/test/org/apache/pig/test/data/TestWordCount.jar!/" />
+      <root url="jar://$PROJECT_DIR$/test/org/apache/pig/test/data/pigtestloader.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

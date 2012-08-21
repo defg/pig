@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="pigtrunk">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/pig.jar!/" />
+      <root url="jar://$PROJECT_DIR$/pig-withouthadoop.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

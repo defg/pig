@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/lib-src/Lib-src.iml" filepath="$PROJECT_DIR$/lib-src/Lib-src.iml" />
+      <module fileurl="file://$PROJECT_DIR$/contrib/piggybank/java/src/main/Main.iml" filepath="$PROJECT_DIR$/contrib/piggybank/java/src/main/Main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/contrib/penny/java/src/main/Main1.iml" filepath="$PROJECT_DIR$/contrib/penny/java/src/main/Main1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Pigtrunk.iml" filepath="$PROJECT_DIR$/Pigtrunk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/shims/src/Shims.iml" filepath="$PROJECT_DIR$/shims/src/Shims.iml" />
+      <module fileurl="file://$PROJECT_DIR$/shims/test/Test.iml" filepath="$PROJECT_DIR$/shims/test/Test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/contrib/penny/java/src/test/Test1.iml" filepath="$PROJECT_DIR$/contrib/penny/java/src/test/Test1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/contrib/piggybank/java/src/test/Test2.iml" filepath="$PROJECT_DIR$/contrib/piggybank/java/src/test/Test2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/tutorial/Tutorial.iml" filepath="$PROJECT_DIR$/tutorial/Tutorial.iml" />
+      <module fileurl="file://$PROJECT_DIR$/test/e2e/pig/udfs/Udfs.iml" filepath="$PROJECT_DIR$/test/e2e/pig/udfs/Udfs.iml" />
+      <module fileurl="file://$PROJECT_DIR$/contrib/zebra/src/Zebra.iml" filepath="$PROJECT_DIR$/contrib/zebra/src/Zebra.iml" />
+    </modules>
+  </component>
+</project>
+
