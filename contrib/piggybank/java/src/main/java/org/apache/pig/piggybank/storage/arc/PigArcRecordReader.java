@@ -47,7 +47,7 @@ import java.text.ParseException;
  * see {@link ://www.archive.org/ }
  * see {@link ://www.grub.org/ }
  */
-public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
+public class PigArcRecordReader<Text, PigArcRecord> extends RecordReader<Text, PigArcRecord> {
 
     private static final Logger LOG = Logger.getLogger(PigArcRecordReader.class);
 
@@ -79,14 +79,14 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
      * Creates a new instance of the <code>Text</code> object for the key.
      */
     public Text getCurrentKey() {
-        return new Text();
+        return key;
     }
 
     /**
      * Creates a new instance of the <code>BytesWritable</code> object for the key
      */
     public PigArcRecord getCurrentValue() {
-        return new PigArcRecord();
+        return value;
     }
 
     /**
@@ -131,8 +131,8 @@ public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
 
         // get the next record from the underlying Nutch implementation
         rv = this._impl.nextKeyValue();
-        LOG.warn("impl.nextKeyValue: " + Boolean.toString(rv));
-        key = this._impl.getCurrentKey();
+        //LOG.warn("impl.nextKeyValue: " + Boolean.toString(rv));
+        key = (Text)this._impl.getCurrentKey();
         bytes = this._impl.getCurrentValue();
 
 //        if (LOG.isDebugEnabled()) {

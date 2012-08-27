@@ -6,6 +6,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.pig.FileInputLoadFunc;
 import org.apache.pig.LoadFunc;
 import org.apache.pig.ResourceSchema.ResourceFieldSchema;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSplit;
@@ -18,14 +19,18 @@ import org.apache.pig.piggybank.storage.arc.PigArcRecordReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class ArcFileLoader extends LoadFunc {
+public class ArcFileLoader extends FileInputLoadFunc {
+
+    private PigArcRecordReader<Text, PigArcRecord> reader;
+
+    private Text key;
+    private PigArcRecord value;
+
     private static final Log log = LogFactory.getLog( ArcFileLoader.class );
-    protected PigArcRecordReader _recordReader = null;
+
     private ArrayList<Object> mProtoTuple = null;
     private TupleFactory tupleFactory = TupleFactory.getInstance();
     ResourceFieldSchema[] fields;
-    Text key;
-    PigArcRecord value;
     //String strSchema = "{}"
     
     /**
@@ -44,20 +49,22 @@ public class ArcFileLoader extends LoadFunc {
 
     @Override
     public Tuple getNext() throws IOException {
+
         log.warn("getNext()");
         Tuple t = tupleFactory.newTuple(4);
-        try {
-            boolean success = _recordReader.nextKeyValue();
+        boolean next = false;
+//        try {
+            next = reader.nextKeyValue();
 
             // True if we read the next record
-            if(success) {
-                key = _recordReader.getCurrentKey();
-                value = _recordReader.getCurrentValue();
+            if(next) {
+                key = reader.getCurrentKey();
+                value = reader.getCurrentValue();
 
                 log.warn("Url: " + key.toString());
                 log.warn("Content: " + value.getContent());
 
-                t = (Tuple) _recordReader.getCurrentValue();
+                //t = (Tuple) reader.getCurrentValue();
                 
                 log.warn("content: " + t.toDelimitedString(", "));
 
@@ -66,25 +73,25 @@ public class ArcFileLoader extends LoadFunc {
                 t.set(2, value.getIpAddress());
                 t.set(3, value.getContent());
                 t.set(4, value.getContentType());
-                
+//
+//            }
+////            else {
+////                log.warn("No success on nextKeyValue()");
+////            }
             }
-            else {
-                log.warn("No success on nextKeyValue()");
-            }
-
-            return t;
-        }
-        catch (Exception ie) {
-            throw new IOException(ie);
-        }
+        return t;
+//        }
+//        catch (Exception ie) {
+//            throw new IOException(ie);
+//        }
     }
 
     @Override
     public void prepareToRead(RecordReader reader, PigSplit split) throws IOException {
-        this._recordReader = (PigArcRecordReader) reader;
-        log.info("Preparing to read with " + _recordReader);
+        this.reader = (PigArcRecordReader) reader;
+        log.info("Preparing to read with " + reader);
 
-        if(_recordReader == null)
+        if(reader == null)
             throw new IOException("Invalid Record Reader");
 
         // UDFContext udfc = UDFContext.getUDFContext();

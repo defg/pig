@@ -44,6 +44,7 @@ public class NutchArcRecordReader
 
     Text key;
     BytesWritable value;
+
     protected Configuration conf;
     protected long splitStart = 0;
     protected long pos = 0;
@@ -274,8 +275,13 @@ public class NutchArcRecordReader
                 /* If we get a null key, make a new one. What the hell are we supposed to do? */
                 if(keyText != null) { LOG.warn("keyText: " + keyText.toString()); }
                 else { this.key = new Text(); keyText = this.key; }
+                LOG.warn("header.toString(): " + header.toString());
                 keyText.set(header);
+                LOG.warn("keyText.toString(): " + keyText.toString());
+                LOG.warn("raw: " + raw.toString());
                 BytesWritable valueBytes = (BytesWritable)value;
+                //LOG.warn("BytesWritable value: " + value.toString());
+                //LOG.warn("BytesWritable: " + valueBytes.toString());
                 valueBytes.set(raw, 0, raw.length);
 
                 // TODO: It would be best to start at the end of the gzip read but
