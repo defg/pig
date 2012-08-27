@@ -173,7 +173,7 @@ public class PigArcRecordReader<Text, PigArcRecord> extends RecordReader<Text, P
         }
 
         try {
-
+                      value.
             // split ARC metadata into fields
             value.setArcRecordHeader(arcRecordHeader);
 
