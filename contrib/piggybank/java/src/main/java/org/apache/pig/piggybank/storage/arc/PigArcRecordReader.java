@@ -47,7 +47,7 @@ import java.text.ParseException;
  * see {@link ://www.archive.org/ }
  * see {@link ://www.grub.org/ }
  */
-public class PigArcRecordReader<Text, PigArcRecord> extends RecordReader<Text, PigArcRecord> {
+public class PigArcRecordReader extends RecordReader<Text, PigArcRecord> {
 
     private static final Logger LOG = Logger.getLogger(PigArcRecordReader.class);
 
@@ -173,7 +173,6 @@ public class PigArcRecordReader<Text, PigArcRecord> extends RecordReader<Text, P
         }
 
         try {
-                      value.
             // split ARC metadata into fields
             value.setArcRecordHeader(arcRecordHeader);
 

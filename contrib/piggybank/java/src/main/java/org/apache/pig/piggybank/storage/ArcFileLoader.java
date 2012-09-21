@@ -21,7 +21,7 @@ import java.util.ArrayList;
 
 public class ArcFileLoader extends FileInputLoadFunc {
 
-    private PigArcRecordReader<Text, PigArcRecord> reader;
+    private PigArcRecordReader reader;
 
     private Text key;
     private PigArcRecord value;
@@ -73,12 +73,11 @@ public class ArcFileLoader extends FileInputLoadFunc {
                 t.set(2, value.getIpAddress());
                 t.set(3, value.getContent());
                 t.set(4, value.getContentType());
-//
-//            }
-////            else {
-////                log.warn("No success on nextKeyValue()");
-////            }
-            }
+
+           } else {
+                log.warn("No success on nextKeyValue()");
+                return null;
+           }
         return t;
 //        }
 //        catch (Exception ie) {
